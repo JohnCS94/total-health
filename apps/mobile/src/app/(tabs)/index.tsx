@@ -79,10 +79,10 @@ export default function Today() {
       weightDate: weight.data?.[0]?.measured_at ?? null,
       weightWeekAgoKg: weightOld.data?.[0] ? Number(weightOld.data[0].weight_kg) : null,
       sleep: sleep.data?.[0] ?? null,
-      // Hide Apple Health strength entries that are just Hevy's copy of a session.
+      // Hide Apple Health entries that are just a copy of a Hevy session (direct, or via Strava as "other").
       workouts: (workouts.data ?? []).filter(
         (w) =>
-          w.activity_type !== 'strength' ||
+          CARDIO.has(w.activity_type) ||
           !(lifts.data ?? []).some((h) => {
             const a0 = new Date(w.started_at).getTime();
             const a1 = a0 + Number(w.duration_min) * 60_000;
@@ -209,6 +209,14 @@ export default function Today() {
     </ScrollView>
   );
 }
+
+/** Cardio activity types; non-cardio Health workouts overlapping a Hevy session are Hevy copies. */
+const CARDIO = new Set([
+  'running', 'walking', 'hiking', 'cycling', 'handCycling', 'swimming', 'rowing', 'elliptical',
+  'stairClimbing', 'stairs', 'stepTraining', 'hiit', 'mixedCardio', 'cardioDance', 'jumpRope',
+  'crossCountrySkiing', 'downhillSkiing', 'snowboarding', 'skatingSports', 'paddleSports', 'surfingSports',
+  'waterFitness', 'wheelchairRunPace', 'wheelchairWalkPace',
+]);
 
 const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '–');
 

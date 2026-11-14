@@ -88,6 +88,9 @@ function mealFor(date: Date, metadata?: Record<string, unknown>): Meal {
   return 'snack';
 }
 
+/** Lose It writes a "Lose It Test Sample" entry to Health when you connect it; it isn't real food. */
+export const isTestSample = (name: string) => /\btest sample\b/i.test(name);
+
 function foodName(metadata?: Record<string, unknown>) {
   const n = metadata?.HKFoodType;
   return typeof n === 'string' && n.trim() ? n.trim() : 'Food';
@@ -168,7 +171,8 @@ export async function readFoodFromHealth(startDate: Date): Promise<{ rows: FoodR
   }
 
   const sampleCount = (byType as unknown as Sample[][]).reduce((a, l) => a + l.length, 0) + correlations.length;
-  return { rows, sampleCount };
+  // Dropping test samples here also deletes any already imported (they're no longer in the current set).
+  return { rows: rows.filter((r) => !isTestSample(r.name)), sampleCount };
 }
 
 const chunks = <T,>(xs: T[], n = 200) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
