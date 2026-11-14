@@ -17,8 +17,6 @@ export default function RootLayout() {
       <StatusBar style="auto" />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="food-search" options={{ presentation: 'modal', title: 'Add food' }} />
-        <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', headerShown: false }} />
       </Stack>
     </SettingsProvider>
   );

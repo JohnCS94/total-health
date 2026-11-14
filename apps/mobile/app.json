@@ -26,14 +26,6 @@
       "expo-router",
       "expo-sqlite",
       [
-        "expo-camera",
-        {
-          "cameraPermission": "Scan food barcodes to look up nutrition info.",
-          "microphonePermission": false,
-          "recordAudioAndroid": false
-        }
-      ],
-      [
         "@kingstinct/react-native-healthkit",
         {
           "NSHealthShareUsageDescription": "Import your weight, sleep, water and workouts from Apple Health.",

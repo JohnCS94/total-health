@@ -1,10 +1,10 @@
 # Health
 
-Personal, single-user health tracker: an iPhone app for logging (with Apple Health and Hevy sync), a
-Supabase backend, and a dashboard website. No accounts or logins.
+Personal, single-user health tracker: an iPhone app that pulls in Apple Health (food from Lose It, weight,
+sleep, water, workouts) and Hevy, a Supabase backend, and a dashboard website. No accounts or logins.
 
 ```
-apps/mobile          Expo (React Native) iPhone app: food, weight, sleep, water, workouts, Apple Health + Hevy sync
+apps/mobile          Expo (React Native) iPhone app: Apple Health + Hevy sync, sleep score, manual weight/water/workouts
 apps/web             Next.js dashboard for Vercel: charts and tables
 supabase/migrations  Database schema + access rules
 ```
@@ -26,7 +26,7 @@ yourself and your partner.
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL Editor**: run the migrations in order: `0001_init.sql`, `0002_single_user.sql`, `0003_hevy.sql`,
-   `0004_remove_insights.sql`.
+   `0004_remove_insights.sql`, `0005_sleep_score.sql`, `0006_food_from_health.sql`.
    The second one prints **your app token**. Copy it. (View it again any time with
    `select token from private.app_token;`)
 3. **Project Settings → API keys**: copy the project URL and the **publishable** key.
@@ -38,13 +38,11 @@ then update it in both places below.
 
 ```sh
 cd apps/mobile
-cp .env.example .env.local   # Supabase URL, publishable key, APP TOKEN, USDA key, Hevy key
+cp .env.example .env.local   # Supabase URL, publishable key, APP TOKEN, Hevy key
 npm install
 npx expo run:ios --device    # first install / after native changes
 npx expo start --clear       # day-to-day: serves JS changes to the installed app
 ```
-
-Get a free USDA key at https://fdc.nal.usda.gov/api-key-signup (`DEMO_KEY` works for testing but is rate-limited).
 
 First install: plug in your iPhone, enable **Developer Mode** (Settings → Privacy & Security), set a
 unique `ios.bundleIdentifier` in `app.json`, run the command above, pick your signing team in Xcode if
@@ -54,9 +52,18 @@ asked (`ios/Health.xcworkspace` → Signing & Capabilities), then trust the cert
 > With a free Apple ID, self-installed apps expire after 7 days and may have restricted capabilities.
 > The $99/yr Apple Developer Program gives 1-year installs and full HealthKit support.
 
-**Apple Health:** reads weight, sleep (incl. deep/REM), water and workouts; writes weight and water you
-log manually. Syncs on every app open and pull-to-refresh; Settings has "Sync 30 days / 1 year" for
-backfill. Sleep *score* isn't a HealthKit field, so enter it in the Log tab (it merges with imported hours).
+**Apple Health:** reads food, weight, sleep (incl. deep/REM), water and workouts; writes weight and water
+you log manually. Syncs on every app open and pull-to-refresh; Settings has "Sync 30 days / 1 year" for
+backfill.
+
+**Food (Lose It):** log food in Lose It with its Apple Health connection on (Lose It → Settings → Apps &
+Devices → Apple Health). Each food Lose It writes to Health is imported with its name, calories and macros;
+edits and deletions in Lose It carry over on the next sync. On days with imported food, older entries made
+in this app are replaced so meals aren't counted twice. Meals are taken from Lose It's metadata when
+present, otherwise from the time of day.
+
+**Sleep score:** calculated per night from Apple Health sleep data: duration 50 + bedtime consistency 30
++ interruptions 20 (Apple's published structure). Details in `apps/mobile/src/lib/sleepScore.ts`.
 
 ## 3. Website (Vercel)
 
@@ -80,5 +87,5 @@ website's Training volume chart, and Hevy's own copies in Apple Health are skipp
 
 ## Data sources
 
-- **Food search:** USDA FoodData Central · **Barcode scan:** Open Food Facts · **Lifting:** Hevy API
+- **Food:** Lose It via Apple Health · **Lifting:** Hevy API
 - Values are stored metric; the units toggle in Settings changes display only.

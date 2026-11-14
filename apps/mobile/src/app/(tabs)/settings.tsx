@@ -51,10 +51,13 @@ export default function Settings() {
     setSyncing(true);
     try {
       const r = await syncFromHealth(days);
-      Alert.alert(
-        'Synced from Apple Health',
-        `${r.weight} weight · ${r.water} water · ${r.sleepNights} nights of sleep · ${r.workouts} workouts`,
-      );
+      const lines = [`${r.food} foods · ${r.weight} weight · ${r.water} water · ${r.sleepNights} nights of sleep · ${r.workouts} workouts`];
+      if (r.duplicatesRemoved) lines.push(`Removed ${r.duplicatesRemoved} duplicate workout${r.duplicatesRemoved === 1 ? '' : 's'}.`);
+      if (r.empty.length)
+        lines.push(
+          `\nNo ${r.empty.join(', ')} data came back from Health. If you do have it, the permission is probably off: iPhone Settings → Health → Data Access & Devices → Health → turn on ${r.empty.join(', ')}.`,
+        );
+      Alert.alert('Synced from Apple Health', lines.join('\n'));
     } catch (e) {
       Alert.alert('Sync failed', String(e));
     } finally {
@@ -87,7 +90,7 @@ export default function Settings() {
         {healthAvailable() ? (
           <>
             <Body muted>
-              Imports weight, sleep, water and workouts. Recent data syncs automatically each time you open the app or pull to refresh on
+              Imports food (from Lose It), weight, sleep, water and workouts. Recent data syncs automatically each time you open the app or pull to refresh on
               Today.
             </Body>
             <Row>

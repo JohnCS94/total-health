@@ -2,9 +2,10 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, KeyboardAvoidingView, ScrollView, View } from 'react-native';
 
-import { Body, Button, Card, Chip, Input, Row, Title, accent, useTheme } from '@/components/ui';
+import { Body, Button, Card, Chip, Input, ProgressBar, Row, Title, accent, useTheme } from '@/components/ui';
 import { useUnits } from '@/lib/settings';
 import { healthAvailable, saveWaterToHealth, saveWeightToHealth } from '@/lib/healthkit';
+import { scoreLabel } from '@/lib/sleepScore';
 import { dayRange, localDate, supabase } from '@/lib/supabase';
 import { distanceLabel, mlTo, round, toKg, toKm, toMl, waterLabel, waterPresets, weightLabel } from '@/lib/units';
 
@@ -118,48 +119,94 @@ function WaterCard() {
   );
 }
 
+type SleepRow = {
+  hours: number | null;
+  score: number | null;
+  bedtime: string | null;
+  wake_time: string | null;
+  awake_min: number | null;
+  wake_count: number | null;
+  score_duration: number | null;
+  score_consistency: number | null;
+  score_interruptions: number | null;
+  source: string;
+};
+
 function SleepCard() {
+  const [row, setRow] = useState<SleepRow | null>(null);
   const [hours, setHours] = useState('');
-  const [score, setScore] = useState('');
-  const [existing, setExisting] = useState<{ hours: number | null; score: number | null; source: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('sleep_entries').select('hours, score, source').eq('sleep_date', localDate()).maybeSingle();
-    setExisting(data);
+    const { data } = await supabase
+      .from('sleep_entries')
+      .select('hours, score, bedtime, wake_time, awake_min, wake_count, score_duration, score_consistency, score_interruptions, source')
+      .eq('sleep_date', localDate())
+      .maybeSingle();
+    setRow(data as SleepRow | null);
   }, []);
   useFocusEffect(useCallback(() => void load(), [load]));
 
-  async function save() {
-    const row: Record<string, unknown> = { sleep_date: localDate() };
-    if (hours) row.hours = parseFloat(hours);
-    if (score) row.score = parseInt(score, 10);
-    if (Object.keys(row).length === 1) return;
+  // Manual hours are only a fallback for nights nothing tracked (no score without timing data).
+  async function saveHours() {
+    const h = parseFloat(hours);
+    if (!h) return;
     setBusy(true);
-    // Upsert by date so adding a score keeps the hours imported from Apple Health (and vice versa).
-    const { error } = await supabase.from('sleep_entries').upsert(row, { onConflict: 'sleep_date' });
+    const { error } = await supabase.from('sleep_entries').upsert({ sleep_date: localDate(), hours: h }, { onConflict: 'sleep_date' });
     setBusy(false);
     if (error) return Alert.alert('Error', error.message);
     setHours('');
-    setScore('');
     load();
   }
 
+  const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '–');
+
   return (
     <Card>
-      <Title color={accent.sleep}>Last night's sleep</Title>
-      {existing ? (
-        <Body muted>
-          Recorded: {existing.hours != null ? `${Number(existing.hours)} h` : '—'}
-          {existing.source === 'healthkit' ? ' (Apple Health)' : ''} · Score {existing.score ?? '—'}
-        </Body>
-      ) : null}
-      <Row>
-        <Input label="Hours" placeholder="7.5" keyboardType="decimal-pad" value={hours} onChangeText={setHours} />
-        <Input label="Sleep score" placeholder="0–100" keyboardType="number-pad" value={score} onChangeText={setScore} />
+      <Row style={{ justifyContent: 'space-between' }}>
+        <Title color={accent.sleep}>Last night's sleep</Title>
+        {row?.score != null ? (
+          <Body style={{ fontWeight: '700' }}>
+            {row.score} · {scoreLabel(row.score)}
+          </Body>
+        ) : null}
       </Row>
-      <Button title="Save sleep" color={accent.sleep} onPress={save} loading={busy} />
+      {row?.score != null ? (
+        <>
+          <Body muted>
+            {time(row.bedtime)} → {time(row.wake_time)} · {Number(row.hours)} h asleep · {Math.round(Number(row.awake_min ?? 0))} min awake ·{' '}
+            {row.wake_count ?? 0} wake-ups
+          </Body>
+          <ScoreBar label="Duration" value={Number(row.score_duration)} max={50} />
+          <ScoreBar label="Bedtime consistency" value={Number(row.score_consistency)} max={30} />
+          <ScoreBar label="Interruptions" value={Number(row.score_interruptions)} max={20} />
+        </>
+      ) : row?.hours != null ? (
+        <Body muted>{Number(row.hours)} h (entered manually, so no score)</Body>
+      ) : (
+        <Body muted>No sleep from Apple Health yet for last night. Pull to refresh on Today to sync.</Body>
+      )}
+      {row?.source !== 'healthkit' ? (
+        <Row>
+          <Input placeholder="Hours (only if not tracked)" keyboardType="decimal-pad" value={hours} onChangeText={setHours} />
+          <Button title="Save" color={accent.sleep} onPress={saveHours} loading={busy} />
+        </Row>
+      ) : null}
     </Card>
+  );
+}
+
+function ScoreBar({ label, value, max }: { label: string; value: number; max: number }) {
+  return (
+    <View style={{ gap: 4 }}>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <Body style={{ fontSize: 13 }}>{label}</Body>
+        <Body muted style={{ fontSize: 13 }}>
+          {Math.round(value)} / {max}
+        </Body>
+      </Row>
+      <ProgressBar value={value} max={max} color={accent.sleep} />
+    </View>
   );
 }
 

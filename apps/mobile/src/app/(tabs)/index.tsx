@@ -1,10 +1,11 @@
-import { router, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView } from 'react-native';
 
-import { BigNumber, Body, Button, Card, ProgressBar, Row, Title, accent, useTheme } from '@/components/ui';
+import { BigNumber, Body, Card, ProgressBar, Row, Title, accent, useTheme } from '@/components/ui';
 import { useSettings, useUnits } from '@/lib/settings';
 import { healthAvailable, syncFromHealth } from '@/lib/healthkit';
+import { scoreLabel } from '@/lib/sleepScore';
 import { dayRange, localDate, supabase } from '@/lib/supabase';
 import { kgTo, kmTo, distanceLabel, mlTo, round, waterLabel, weightLabel } from '@/lib/units';
 
@@ -142,7 +143,7 @@ export default function Today() {
         <Card style={{ flex: 1 }}>
           <Title color={accent.sleep}>Sleep</Title>
           <BigNumber value={lastNight?.hours != null ? String(round(Number(lastNight.hours))) : '—'} unit="h" />
-          <Body muted>{lastNight?.score != null ? `Score ${lastNight.score}` : 'No score yet'}</Body>
+          <Body muted>{lastNight?.score != null ? `Score ${lastNight.score} · ${scoreLabel(lastNight.score)}` : 'No score yet'}</Body>
         </Card>
       </Row>
 
@@ -166,8 +167,6 @@ export default function Today() {
         )}
       </Card>
 
-      <View style={{ height: 8 }} />
-      <Button title="Log food" color={accent.food} onPress={() => router.push('/food-search')} />
     </ScrollView>
   );
 }
