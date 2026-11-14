@@ -11,7 +11,6 @@ export default function TabLayout() {
     <Tabs screenOptions={{ tabBarActiveTintColor: '#0A84FF' }}>
       <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: icon('heart.text.square') }} />
       <Tabs.Screen name="food" options={{ title: 'Food', tabBarIcon: icon('fork.knife') }} />
-      <Tabs.Screen name="log" options={{ title: 'Log', tabBarIcon: icon('plus.circle') }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: icon('gearshape') }} />
     </Tabs>
   );

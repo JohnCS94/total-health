@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 
 import { BigNumber, Body, Card, ProgressBar, Row, Title, accent, useTheme } from '@/components/ui';
 import { useSettings, useUnits } from '@/lib/settings';
@@ -16,7 +16,18 @@ type Summary = {
   weightKg: number | null;
   weightDate: string | null;
   weightWeekAgoKg: number | null;
-  sleep: { hours: number | null; score: number | null; sleep_date: string } | null;
+  sleep: {
+    hours: number | null;
+    score: number | null;
+    sleep_date: string;
+    bedtime: string | null;
+    wake_time: string | null;
+    awake_min: number | null;
+    wake_count: number | null;
+    score_duration: number | null;
+    score_consistency: number | null;
+    score_interruptions: number | null;
+  } | null;
   workouts: { activity_type: string; duration_min: number; distance_km: number | null }[];
   lifts: { title: string | null; duration_min: number | null; set_count: number | null; volume_kg: number | null }[];
 };
@@ -43,7 +54,11 @@ export default function Today() {
         .lte('measured_at', weekAgo.toISOString())
         .order('measured_at', { ascending: false })
         .limit(1),
-      supabase.from('sleep_entries').select('hours, score, sleep_date').order('sleep_date', { ascending: false }).limit(1),
+      supabase
+        .from('sleep_entries')
+        .select('hours, score, sleep_date, bedtime, wake_time, awake_min, wake_count, score_duration, score_consistency, score_interruptions')
+        .order('sleep_date', { ascending: false })
+        .limit(1),
       supabase
         .from('workouts')
         .select('activity_type, duration_min, distance_km, started_at')
@@ -129,23 +144,47 @@ export default function Today() {
         <ProgressBar value={s?.waterMl ?? 0} max={waterGoal} color={accent.water} />
       </Card>
 
-      <Row style={{ alignItems: 'stretch' }}>
-        <Card style={{ flex: 1 }}>
-          <Title color={accent.weight}>Weight</Title>
-          <BigNumber value={s?.weightKg != null ? String(round(kgTo(s.weightKg, units))) : '—'} unit={weightLabel(units)} />
-          {weightDelta != null ? (
-            <Body muted>
-              {weightDelta > 0 ? '+' : ''}
-              {round(kgTo(weightDelta, units))} {weightLabel(units)} vs last week
+      <Card>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <Title color={accent.sleep}>Last night's sleep</Title>
+          {lastNight?.score != null ? (
+            <Body style={{ fontWeight: '700' }}>
+              {lastNight.score} · {scoreLabel(lastNight.score)}
             </Body>
           ) : null}
-        </Card>
-        <Card style={{ flex: 1 }}>
-          <Title color={accent.sleep}>Sleep</Title>
-          <BigNumber value={lastNight?.hours != null ? String(round(Number(lastNight.hours))) : '—'} unit="h" />
-          <Body muted>{lastNight?.score != null ? `Score ${lastNight.score} · ${scoreLabel(lastNight.score)}` : 'No score yet'}</Body>
-        </Card>
-      </Row>
+        </Row>
+        {lastNight ? (
+          <>
+            <BigNumber value={lastNight.hours != null ? String(round(Number(lastNight.hours))) : '—'} unit="h asleep" />
+            {lastNight.bedtime ? (
+              <Body muted>
+                {time(lastNight.bedtime)} → {time(lastNight.wake_time)} · {Math.round(Number(lastNight.awake_min ?? 0))} min awake ·{' '}
+                {lastNight.wake_count ?? 0} wake-ups
+              </Body>
+            ) : null}
+            {lastNight.score != null ? (
+              <>
+                <ScoreBar label="Duration" value={Number(lastNight.score_duration)} max={50} />
+                <ScoreBar label="Bedtime consistency" value={Number(lastNight.score_consistency)} max={30} />
+                <ScoreBar label="Interruptions" value={Number(lastNight.score_interruptions)} max={20} />
+              </>
+            ) : null}
+          </>
+        ) : (
+          <Body muted>No sleep from Apple Health for last night yet.</Body>
+        )}
+      </Card>
+
+      <Card>
+        <Title color={accent.weight}>Weight</Title>
+        <BigNumber value={s?.weightKg != null ? String(round(kgTo(s.weightKg, units))) : '—'} unit={weightLabel(units)} />
+        {weightDelta != null ? (
+          <Body muted>
+            {weightDelta > 0 ? '+' : ''}
+            {round(kgTo(weightDelta, units))} {weightLabel(units)} vs last week
+          </Body>
+        ) : null}
+      </Card>
 
       <Card>
         <Title color={accent.workout}>Workouts today</Title>
@@ -168,5 +207,21 @@ export default function Today() {
       </Card>
 
     </ScrollView>
+  );
+}
+
+const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '–');
+
+function ScoreBar({ label, value, max }: { label: string; value: number; max: number }) {
+  return (
+    <View style={{ gap: 4 }}>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <Body style={{ fontSize: 13 }}>{label}</Body>
+        <Body muted style={{ fontSize: 13 }}>
+          {Math.round(value)} / {max}
+        </Body>
+      </Row>
+      <ProgressBar value={value} max={max} color={accent.sleep} />
+    </View>
   );
 }

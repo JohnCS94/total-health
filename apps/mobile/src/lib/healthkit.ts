@@ -1,9 +1,8 @@
 /**
  * Apple Health integration.
  *
- * Reads weight, sleep, water and workouts from HealthKit and upserts them into Supabase.
- * Weight and water logged manually in the app are also written back to Health; the
- * returned HealthKit UUID is stored on the row so the next sync doesn't import a duplicate.
+ * Read-only: imports food (Lose It), weight, sleep, water and workouts from HealthKit into Supabase.
+ * Rows are keyed by their HealthKit UUID so re-syncing never creates duplicates.
  */
 import {
   WorkoutActivityType,
@@ -12,7 +11,6 @@ import {
   queryQuantitySamples,
   queryWorkoutSamples,
   requestAuthorization,
-  saveQuantitySample,
 } from '@kingstinct/react-native-healthkit';
 import { Platform } from 'react-native';
 
@@ -35,8 +33,6 @@ const READ = [
   ...NUTRITION_READ,
 ] as const;
 
-const WRITE = ['HKQuantityTypeIdentifierBodyMass', 'HKQuantityTypeIdentifierDietaryWater'] as const;
-
 export function healthAvailable() {
   return Platform.OS === 'ios' && isHealthDataAvailable();
 }
@@ -44,21 +40,7 @@ export function healthAvailable() {
 /** Must be called before any query, or HealthKit will crash the app. Safe to call repeatedly. */
 export async function ensureHealthAuthorization() {
   if (!healthAvailable()) return false;
-  return requestAuthorization({ toRead: READ, toShare: WRITE });
-}
-
-// ───────────────────────── write-back ─────────────────────────
-
-export async function saveWeightToHealth(kg: number, at: Date): Promise<string | undefined> {
-  if (!(await ensureHealthAuthorization())) return undefined;
-  const s = await saveQuantitySample('HKQuantityTypeIdentifierBodyMass', 'kg', kg, at, at);
-  return s?.uuid;
-}
-
-export async function saveWaterToHealth(ml: number, at: Date): Promise<string | undefined> {
-  if (!(await ensureHealthAuthorization())) return undefined;
-  const s = await saveQuantitySample('HKQuantityTypeIdentifierDietaryWater', 'mL', ml, at, at);
-  return s?.uuid;
+  return requestAuthorization({ toRead: READ });
 }
 
 // ───────────────────────── import ─────────────────────────

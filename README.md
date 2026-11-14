@@ -4,7 +4,7 @@ Personal, single-user health tracker: an iPhone app that pulls in Apple Health (
 sleep, water, workouts) and Hevy, a Supabase backend, and a dashboard website. No accounts or logins.
 
 ```
-apps/mobile          Expo (React Native) iPhone app: Apple Health + Hevy sync, sleep score, manual weight/water/workouts
+apps/mobile          Expo (React Native) iPhone app: syncs Apple Health + Hevy (no manual logging), sleep score
 apps/web             Next.js dashboard for Vercel: charts and tables
 supabase/migrations  Database schema + access rules
 ```
@@ -53,8 +53,7 @@ asked (`ios/Health.xcworkspace` → Signing & Capabilities), then trust the cert
 > With a free Apple ID, self-installed apps expire after 7 days and may have restricted capabilities.
 > The $99/yr Apple Developer Program gives 1-year installs and full HealthKit support.
 
-**Apple Health:** reads food, weight, sleep (incl. deep/REM), water and workouts; writes weight and water
-you log manually. Syncs on every app open and pull-to-refresh; Settings has "Sync 30 days / 1 year" for
+**Apple Health (read-only):** imports food, weight, sleep (incl. deep/REM), water and workouts. Syncs on every app open and pull-to-refresh; Settings has "Sync 30 days / 1 year" for
 backfill.
 
 **Food (Lose It):** log food in Lose It with its Apple Health connection on (Lose It → Settings → Apps &

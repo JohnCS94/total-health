@@ -8,7 +8,7 @@
  *
  * Imported entries are keyed by their HealthKit UUID, so re-syncing updates them, and foods deleted in
  * Lose It are removed here on the next sync. On days that have imported food, entries made the old way
- * (manually in this app) are removed so the same meal isn't counted twice.
+ * (manually, in an older version of this app) are removed so the same meal isn't counted twice.
  */
 import { queryCorrelationSamples, queryQuantitySamples } from '@kingstinct/react-native-healthkit';
 
