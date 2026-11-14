@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Health",
+    "slug": "health",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.johnscipion.health"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Scan food barcodes to look up nutrition info.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Import your weight, sleep, water and workouts from Apple Health.",
+          "NSHealthUpdateUsageDescription": "Save weight and water you log in this app to Apple Health.",
+          "background": false
+        }
+      ],
+      "expo-status-bar"
+    ],
+    "scheme": "health",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
