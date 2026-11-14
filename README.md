@@ -19,8 +19,9 @@ your database) on every request. Without it, even someone holding your publishab
 | iPhone app | baked into the app on your phone (`apps/mobile/.env.local`) |
 | Website | Vercel **server** env var. Never sent to the browser |
 
-The website itself has no login: **anyone with its URL can view the dashboard.** Keep the URL to
-yourself and your partner.
+The website is protected by a single **passphrase** (`DASHBOARD_PASSPHRASE`). Enter it once per device and
+the dashboard stays unlocked for 90 days (httpOnly cookie); **Lock** in the header signs that device out,
+and changing the passphrase signs out every device. `/?demo` (sample data) stays public.
 
 ## 1. Supabase
 
@@ -69,12 +70,12 @@ present, otherwise from the time of day.
 
 ```sh
 cd apps/web
-cp .env.example .env.local   # SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, APP_TOKEN
+cp .env.example .env.local   # SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, APP_TOKEN, DASHBOARD_PASSPHRASE
 npm install
 npm run dev                  # http://localhost:3000  (/?demo shows sample data)
 ```
 
-On Vercel, add the same three variables under **Settings → Environment Variables**. They have **no**
+On Vercel, add the same four variables under **Settings → Environment Variables**. They have **no**
 `NEXT_PUBLIC_` prefix, so they stay server-side. Then redeploy. The dashboard refreshes every minute.
 
 ## 4. Hevy
